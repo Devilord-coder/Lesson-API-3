@@ -5,6 +5,7 @@ from io import BytesIO
 from PyQt6.QtGui import QPixmap
 from PyQt6 import uic
 from PIL import Image
+from PyQt6.QtCore import Qt
 
 
 class MapWindow(QMainWindow):
@@ -14,6 +15,8 @@ class MapWindow(QMainWindow):
         super().__init__()
         
         uic.loadUi("map.ui", self)
+        
+        self.delta = "0.05"
         
         self.map.setPixmap(QPixmap("map.png"))
         
@@ -25,7 +28,7 @@ class MapWindow(QMainWindow):
         params = {
             "apikey": "f3a0fe3a-b07e-4840-a1da-06f18b2ddf13",
             "ll": self.address.text(),
-            "spn": "0.05,0.05"
+            "spn": f"{self.delta},{self.delta}"
         }
         
         if not self.address.text:
@@ -38,6 +41,14 @@ class MapWindow(QMainWindow):
             img = Image.open(BytesIO(response.content))
             img.save('map.png')
             self.map.setPixmap(QPixmap("map.png"))
+    
+    def keyPressEvent(self, event):
+        if event.modifiers() == Qt.KeyboardModifier.ShiftModifier and event.key() == Qt.Key.Key_Up:
+            self.delta = str(float(self.delta) + 0.005)
+            self.update_pixmap()
+        elif event.modifiers() == Qt.KeyboardModifier.ShiftModifier and event.key() == Qt.Key.Key_Down:
+            self.delta = str(float(self.delta) - 0.005)
+            self.update_pixmap()
     
 
 def except_hook(cls, exception, traceback):
