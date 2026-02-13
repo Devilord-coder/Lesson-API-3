@@ -15,8 +15,9 @@ class MapWindow(QMainWindow):
         
         uic.loadUi("map.ui", self)
         
+        self.map.setPixmap(QPixmap("map.png"))
+        
         self.address.returnPressed.connect(self.update_pixmap)
-        self.update_pixmap()
     
     def update_pixmap(self):
         """ Обновление картинки карты """
