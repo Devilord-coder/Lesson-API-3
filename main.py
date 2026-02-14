@@ -9,47 +9,69 @@ from PyQt6.QtCore import Qt
 
 
 class MapWindow(QMainWindow):
-    """ MAIN WINDOW """
-    
+    """MAIN WINDOW"""
+
     def __init__(self):
         super().__init__()
-        
+        self.theme_style = "light"
+
         uic.loadUi("map.ui", self)
-        
+        self.map.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+
         self.delta = "0.05"
-        
+
         self.map.setPixmap(QPixmap("map.png"))
-        
+        self.map.setFocus()
+
         self.address.returnPressed.connect(self.update_pixmap)
-    
+        self.theme.clicked.connect(self.change_theme)
+
     def update_pixmap(self):
-        """ Обновление картинки карты """
-        
+        """Обновление картинки карты"""
+
         params = {
             "apikey": "f3a0fe3a-b07e-4840-a1da-06f18b2ddf13",
             "ll": self.address.text(),
-            "spn": f"{self.delta},{self.delta}"
+            "spn": f"{self.delta},{self.delta}",
         }
-        
-        if not self.address.text:
+
+        if self.theme_style == "dark":
+            params["style"] = "stylers.opacity:0.2"
+
+        if not self.address.text():
             params["ll"] = "37.619073,55.745794"
-        
+
         response = requests.get("https://static-maps.yandex.ru/v1", params)
         if not response:
-            return
+            print(f"Ошибка API: {response.status_code} — {response.reason}")
+            print("URL запроса:", response.url)
         else:
             img = Image.open(BytesIO(response.content))
-            img.save('map.png')
+            img.save("map.png")
             self.map.setPixmap(QPixmap("map.png"))
-    
+            self.map.setFocus()
+
     def keyPressEvent(self, event):
-        if event.modifiers() == Qt.KeyboardModifier.ShiftModifier and event.key() == Qt.Key.Key_Up:
+        if (
+            event.modifiers() == Qt.KeyboardModifier.ShiftModifier
+            and event.key() == Qt.Key.Key_Up
+        ):
             self.delta = str(float(self.delta) + 0.005)
             self.update_pixmap()
-        elif event.modifiers() == Qt.KeyboardModifier.ShiftModifier and event.key() == Qt.Key.Key_Down:
+        elif (
+            event.modifiers() == Qt.KeyboardModifier.ShiftModifier
+            and event.key() == Qt.Key.Key_Down
+        ):
             self.delta = str(float(self.delta) - 0.005)
             self.update_pixmap()
-    
+
+    def change_theme(self):
+        if self.theme_style == "light":
+            self.theme_style = "dark"
+        else:
+            self.theme_style = "light"
+        self.update_pixmap()
+
 
 def except_hook(cls, exception, traceback):
     sys.__excepthook__(cls, exception, traceback)
