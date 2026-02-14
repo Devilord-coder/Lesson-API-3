@@ -16,16 +16,33 @@ class MapWindow(QMainWindow):
         self.theme_style = "light"
 
         uic.loadUi("map.ui", self)
-        self.map.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-
-        self.delta = "0.05"
-
+        
+        self.delta = 0.05
+        self.coords = "37.619073,55.745794"
+        
         self.map.setPixmap(QPixmap("map.png"))
-        self.map.setFocus()
-
-        self.address.returnPressed.connect(self.update_pixmap)
+        
+        self.address.setText(self.coords)
+        self.address.returnPressed.connect(self.lineedit_pressed)
         self.theme.clicked.connect(self.change_theme)
-
+        self.address.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
+        self.update_pixmap()
+        self.setWindowTitle(self.coords)
+    
+    def update_coords(self, delta_x: float, delta_y: float):
+        x, y = map(float, self.coords.split(','))
+        x += delta_x
+        y += delta_y
+        self.coords = f"{x},{y}"
+        self.setWindowTitle(self.coords)
+        self.address.setText(self.coords)
+        self.update_pixmap()
+    
+    def lineedit_pressed(self):
+        self.coords = self.address.text()
+        self.address.clearFocus()
+        self.update_pixmap()
+    
     def update_pixmap(self):
         """Обновление картинки карты"""
 
@@ -37,33 +54,19 @@ class MapWindow(QMainWindow):
 
         if self.theme_style == "dark":
             params["style"] = "stylers.opacity:0.2"
-
-        if not self.address.text():
+        
+        if not self.coords:
             params["ll"] = "37.619073,55.745794"
 
         response = requests.get("https://static-maps.yandex.ru/v1", params)
         if not response:
-            print(f"Ошибка API: {response.status_code} — {response.reason}")
-            print("URL запроса:", response.url)
+            self.address.setStyleSheet('background-color: "red"')
         else:
+            self.address.setStyleSheet("")
             img = Image.open(BytesIO(response.content))
             img.save("map.png")
             self.map.setPixmap(QPixmap("map.png"))
-            self.map.setFocus()
-
-    def keyPressEvent(self, event):
-        if (
-            event.modifiers() == Qt.KeyboardModifier.ShiftModifier
-            and event.key() == Qt.Key.Key_Up
-        ):
-            self.delta = str(float(self.delta) + 0.005)
-            self.update_pixmap()
-        elif (
-            event.modifiers() == Qt.KeyboardModifier.ShiftModifier
-            and event.key() == Qt.Key.Key_Down
-        ):
-            self.delta = str(float(self.delta) - 0.005)
-            self.update_pixmap()
+            self.setWindowTitle(self.address.text())
 
     def change_theme(self):
         if self.theme_style == "light":
@@ -71,7 +74,23 @@ class MapWindow(QMainWindow):
         else:
             self.theme_style = "light"
         self.update_pixmap()
-
+    
+    def keyPressEvent(self, event):
+        key = event.key()
+        if key == Qt.Key.Key_PageUp:
+            self.delta += 0.005
+            self.update_pixmap()
+        elif key == Qt.Key.Key_PageDown:
+            self.delta -= 0.005
+            self.update_pixmap()
+        elif key == Qt.Key.Key_Up:
+            self.update_coords(0, 0.005)
+        elif key == Qt.Key.Key_Down:
+            self.update_coords(0, -0.005)
+        elif key == Qt.Key.Key_Right:
+            self.update_coords(0.005, 0)
+        elif key == Qt.Key.Key_Left:
+            self.update_coords(-0.005, 0)
 
 def except_hook(cls, exception, traceback):
     sys.__excepthook__(cls, exception, traceback)
