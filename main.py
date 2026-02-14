@@ -16,39 +16,69 @@ class MapWindow(QMainWindow):
         
         uic.loadUi("map.ui", self)
         
-        self.delta = "0.05"
+        self.delta = 0.05
+        self.coords = "37.619073,55.745794"
         
         self.map.setPixmap(QPixmap("map.png"))
         
-        self.address.returnPressed.connect(self.update_pixmap)
+        self.address.setText(self.coords)
+        self.address.returnPressed.connect(self.lineedit_pressed)
+        self.address.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
+        self.update_pixmap()
+        self.setWindowTitle(self.coords)
+    
+    def update_coords(self, delta_x: float, delta_y: float):
+        x, y = map(float, self.coords.split(','))
+        x += delta_x
+        y += delta_y
+        self.coords = f"{x},{y}"
+        self.setWindowTitle(self.coords)
+        self.address.setText(self.coords)
+        self.update_pixmap()
+    
+    def lineedit_pressed(self):
+        self.coords = self.address.text()
+        self.address.clearFocus()
+        self.update_pixmap()
     
     def update_pixmap(self):
         """ Обновление картинки карты """
         
         params = {
             "apikey": "f3a0fe3a-b07e-4840-a1da-06f18b2ddf13",
-            "ll": self.address.text(),
+            "ll": self.coords,
             "spn": f"{self.delta},{self.delta}"
         }
         
-        if not self.address.text:
+        if not self.coords:
             params["ll"] = "37.619073,55.745794"
         
         response = requests.get("https://static-maps.yandex.ru/v1", params)
         if not response:
-            return
+            self.address.setStyleSheet('background-color: "red"')
         else:
+            self.address.setStyleSheet("")
             img = Image.open(BytesIO(response.content))
             img.save('map.png')
             self.map.setPixmap(QPixmap("map.png"))
+            self.setWindowTitle(self.address.text())
     
     def keyPressEvent(self, event):
-        if event.modifiers() == Qt.KeyboardModifier.ShiftModifier and event.key() == Qt.Key.Key_Up:
-            self.delta = str(float(self.delta) + 0.005)
+        key = event.key()
+        if key == Qt.Key.Key_PageUp:
+            self.delta += 0.005
             self.update_pixmap()
-        elif event.modifiers() == Qt.KeyboardModifier.ShiftModifier and event.key() == Qt.Key.Key_Down:
-            self.delta = str(float(self.delta) - 0.005)
+        elif key == Qt.Key.Key_PageDown:
+            self.delta -= 0.005
             self.update_pixmap()
+        elif key == Qt.Key.Key_Up:
+            self.update_coords(0, 0.005)
+        elif key == Qt.Key.Key_Down:
+            self.update_coords(0, -0.005)
+        elif key == Qt.Key.Key_Right:
+            self.update_coords(0.005, 0)
+        elif key == Qt.Key.Key_Left:
+            self.update_coords(-0.005, 0)
     
 
 def except_hook(cls, exception, traceback):
