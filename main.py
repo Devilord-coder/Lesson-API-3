@@ -53,7 +53,7 @@ class MapWindow(QMainWindow):
         }
 
         if self.theme_style == "dark":
-            params["style"] = "stylers.opacity:0.2"
+            params["theme"] = "dark"
         
         if not self.coords:
             params["ll"] = "37.619073,55.745794"
