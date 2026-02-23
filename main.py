@@ -36,14 +36,15 @@ class MapWindow(QMainWindow):
         self.address_mark.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
         self.update_pixmap()
         self.setWindowTitle(self.coords)
-        
+
     def switch_postal_code(self):
         self.postal_code.setStyleSheet("")
         self.write_postal_code = not self.write_postal_code
-        if self.postal_code.text() == 'Приписывать почтовый индекс':
-            self.postal_code.setText('Не приписывать почтовый индекс')
+        if self.postal_code.text() == "Приписывать почтовый индекс":
+            self.postal_code.setText("Не приписывать почтовый индекс")
         else:
-            self.postal_code.setText('Приписывать почтовый индекс')
+            self.postal_code.setText("Приписывать почтовый индекс")
+        self.lineedit_pressed()
 
     def update_coords(self, delta_x: float, delta_y: float):
         x, y = map(float, self.coords.split(","))
@@ -101,18 +102,22 @@ class MapWindow(QMainWindow):
             self.address.setText(self.coords)
 
             full_address = []
-            
+
             postal_code = None
             if self.write_postal_code:
                 try:
-                    postal_code = data["response"]["GeoObjectCollection"]["featureMember"][0][
-                        "GeoObject"
-                    ]["metaDataProperty"]["GeocoderMetaData"]["Address"]["postal_code"]
+                    postal_code = data["response"]["GeoObjectCollection"][
+                        "featureMember"
+                    ][0]["GeoObject"]["metaDataProperty"]["GeocoderMetaData"][
+                        "Address"
+                    ][
+                        "postal_code"
+                    ]
                 except Exception:
                     self.write_postal_code = False
                     self.postal_code.setStyleSheet("background-color: 'red'")
-                    self.postal_code.setText('Приписывать почтовый индекс')
-                    
+                    self.postal_code.setText("Приписывать почтовый индекс")
+
             address = data["response"]["GeoObjectCollection"]["featureMember"][0][
                 "GeoObject"
             ]["metaDataProperty"]["GeocoderMetaData"]["Address"]["Components"]
