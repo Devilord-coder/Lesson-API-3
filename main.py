@@ -19,7 +19,7 @@ class MapWindow(QMainWindow):
 
         self.delta = 0.05
         self.coords = "37.619073,55.745794"
-        self.mark_coords = ""
+        self.mark_coords = []
         self.set_mark = False
 
         self.map.setPixmap(QPixmap("map.png"))
@@ -28,6 +28,7 @@ class MapWindow(QMainWindow):
         self.address.returnPressed.connect(self.coords_address_update)
         self.address_mark.returnPressed.connect(self.lineedit_pressed)
         self.theme.clicked.connect(self.change_theme)
+        self.clear_marks.clicked.connect(self.delete_marks)
         self.address.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
         self.address_mark.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
         self.update_pixmap()
@@ -58,6 +59,10 @@ class MapWindow(QMainWindow):
         self.address_mark.clearFocus()
         self.update_pixmap()
 
+    def delete_marks(self):
+        self.mark_coords = []
+        self.update_pixmap()
+
     def get_mark_coords(self):
         """Обновление координат по метке"""
         server_address = "https://geocode-maps.yandex.ru/1.x/?"
@@ -77,7 +82,7 @@ class MapWindow(QMainWindow):
             ]["Point"]["pos"].split()
             coords = ",".join(coords)
             self.coords = coords
-            self.mark_coords = coords
+            self.mark_coords.append(coords)
             self.address.setText(self.coords)
 
         else:
@@ -95,7 +100,7 @@ class MapWindow(QMainWindow):
             params["theme"] = "dark"
 
         if self.set_mark:
-            params["pt"] = self.mark_coords
+            params["pt"] = "|".join(self.mark_coords)
 
         if not self.coords:
             params["ll"] = "37.619073,55.745794"
