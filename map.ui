@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>737</width>
-    <height>522</height>
+    <height>629</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,6 +17,13 @@
    <layout class="QGridLayout" name="gridLayout_2">
     <item row="0" column="0">
      <layout class="QGridLayout" name="gridLayout">
+      <item row="3" column="0" colspan="2">
+       <widget class="QPushButton" name="theme">
+        <property name="text">
+         <string>Сменить тему</string>
+        </property>
+       </widget>
+      </item>
       <item row="1" column="1">
        <widget class="QLineEdit" name="address_mark">
         <property name="text">
@@ -33,6 +40,12 @@
       </item>
       <item row="4" column="0" colspan="2">
        <widget class="QLabel" name="map">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>350</height>
+         </size>
+        </property>
         <property name="text">
          <string>TextLabel</string>
         </property>
@@ -45,17 +58,17 @@
         </property>
        </widget>
       </item>
-      <item row="3" column="0" colspan="2">
-       <widget class="QPushButton" name="theme">
-        <property name="text">
-         <string>Сменить тему</string>
-        </property>
-       </widget>
-      </item>
       <item row="2" column="0" colspan="2">
        <widget class="QPushButton" name="clear_marks">
         <property name="text">
          <string>Очистить метки</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0" colspan="2">
+       <widget class="QLabel" name="full_address">
+        <property name="text">
+         <string/>
         </property>
        </widget>
       </item>

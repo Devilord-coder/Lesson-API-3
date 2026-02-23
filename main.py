@@ -45,7 +45,8 @@ class MapWindow(QMainWindow):
 
     def coords_address_update(self):
         """Обновление карты по координтам"""
-        self.address_mark.setText("")  # Отчистка адресса в поле ввода
+        self.address_mark.setText("")  # Очистка адреса в поле ввода
+        self.full_address.setText("")  # Очистка полного адреса
         self.lineedit_pressed()
 
     def lineedit_pressed(self):
@@ -61,6 +62,8 @@ class MapWindow(QMainWindow):
 
     def delete_marks(self):
         self.mark_coords = []
+        self.address_mark.setText("")
+        self.full_address.setText("")
         self.update_pixmap()
 
     def get_mark_coords(self):
@@ -84,6 +87,15 @@ class MapWindow(QMainWindow):
             self.coords = coords
             self.mark_coords.append(coords)
             self.address.setText(self.coords)
+
+            full_address = []
+            address = data["response"]["GeoObjectCollection"]["featureMember"][0][
+                "GeoObject"
+            ]["metaDataProperty"]["GeocoderMetaData"]["Address"]["Components"]
+            for component in address:
+                full_address.append(component["name"])
+            full_address = ", ".join(full_address)
+            self.full_address.setText(full_address)
 
         else:
             self.address_mark.setStyleSheet('background-color: "red"')
