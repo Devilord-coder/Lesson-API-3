@@ -6,6 +6,7 @@ from PyQt6.QtGui import QPixmap
 from PyQt6 import uic
 from PIL import Image
 from PyQt6.QtCore import Qt
+from pprint import pprint
 
 
 class MapWindow(QMainWindow):
@@ -21,6 +22,7 @@ class MapWindow(QMainWindow):
         self.coords = "37.619073,55.745794"
         self.mark_coords = []
         self.set_mark = False
+        self.write_postal_code = False
 
         self.map.setPixmap(QPixmap("map.png"))
 
@@ -29,10 +31,19 @@ class MapWindow(QMainWindow):
         self.address_mark.returnPressed.connect(self.lineedit_pressed)
         self.theme.clicked.connect(self.change_theme)
         self.clear_marks.clicked.connect(self.delete_marks)
+        self.postal_code.clicked.connect(self.switch_postal_code)
         self.address.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
         self.address_mark.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
         self.update_pixmap()
         self.setWindowTitle(self.coords)
+        
+    def switch_postal_code(self):
+        self.postal_code.setStyleSheet("")
+        self.write_postal_code = not self.write_postal_code
+        if self.postal_code.text() == 'Приписывать почтовый индекс':
+            self.postal_code.setText('Не приписывать почтовый индекс')
+        else:
+            self.postal_code.setText('Приписывать почтовый индекс')
 
     def update_coords(self, delta_x: float, delta_y: float):
         x, y = map(float, self.coords.split(","))
@@ -80,6 +91,7 @@ class MapWindow(QMainWindow):
         if response.status_code == 200:
             self.set_mark = True
             data = response.json()
+            pprint(data)
             coords = data["response"]["GeoObjectCollection"]["featureMember"][0][
                 "GeoObject"
             ]["Point"]["pos"].split()
@@ -89,11 +101,25 @@ class MapWindow(QMainWindow):
             self.address.setText(self.coords)
 
             full_address = []
+            
+            postal_code = None
+            if self.write_postal_code:
+                try:
+                    postal_code = data["response"]["GeoObjectCollection"]["featureMember"][0][
+                        "GeoObject"
+                    ]["metaDataProperty"]["GeocoderMetaData"]["Address"]["postal_code"]
+                except Exception:
+                    self.write_postal_code = False
+                    self.postal_code.setStyleSheet("background-color: 'red'")
+                    self.postal_code.setText('Приписывать почтовый индекс')
+                    
             address = data["response"]["GeoObjectCollection"]["featureMember"][0][
                 "GeoObject"
             ]["metaDataProperty"]["GeocoderMetaData"]["Address"]["Components"]
             for component in address:
                 full_address.append(component["name"])
+            if postal_code:
+                full_address.append(postal_code)
             full_address = ", ".join(full_address)
             self.full_address.setText(full_address)
 
