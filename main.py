@@ -6,7 +6,7 @@ from PyQt6.QtGui import QPixmap
 from PyQt6 import uic
 from PIL import Image
 from PyQt6.QtCore import Qt
-from pprint import pprint
+import math
 
 
 class MapWindow(QMainWindow):
@@ -18,13 +18,14 @@ class MapWindow(QMainWindow):
 
         uic.loadUi("map.ui", self)
 
-        self.delta = 0.05
+        self.zoom = 10
         self.coords = "37.619073,55.745794"
         self.mark_coords = []
         self.set_mark = False
         self.write_postal_code = False
 
-        self.map.setPixmap(QPixmap("map.png"))
+        mappx = QPixmap("map.png")
+        self.map.setPixmap(mappx)
 
         self.address.setText(self.coords)
         self.address.returnPressed.connect(self.coords_address_update)
@@ -32,8 +33,10 @@ class MapWindow(QMainWindow):
         self.theme.clicked.connect(self.change_theme)
         self.clear_marks.clicked.connect(self.delete_marks)
         self.postal_code.clicked.connect(self.switch_postal_code)
+        self.map.mousePressEvent = self.on_map_clicked
         self.address.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
         self.address_mark.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
+        self.map.setStyleSheet('background-color: "gray"')
         self.update_pixmap()
         self.setWindowTitle(self.coords)
 
@@ -67,7 +70,8 @@ class MapWindow(QMainWindow):
         self.coords = self.address.text()
         self.mark = self.address_mark.text()
         if self.mark:
-            self.get_mark_coords()
+            self.coords = self.get_mark_coords()
+            self.address.setText(self.coords)
         self.address.clearFocus()
         self.address_mark.clearFocus()
         self.update_pixmap()
@@ -92,14 +96,11 @@ class MapWindow(QMainWindow):
         if response.status_code == 200:
             self.set_mark = True
             data = response.json()
-            pprint(data)
             coords = data["response"]["GeoObjectCollection"]["featureMember"][0][
                 "GeoObject"
             ]["Point"]["pos"].split()
             coords = ",".join(coords)
-            self.coords = coords
             self.mark_coords.append(coords)
-            self.address.setText(self.coords)
 
             full_address = []
 
@@ -127,6 +128,7 @@ class MapWindow(QMainWindow):
                 full_address.append(postal_code)
             full_address = ", ".join(full_address)
             self.full_address.setText(full_address)
+            return coords
 
         else:
             self.address_mark.setStyleSheet('background-color: "red"')
@@ -136,7 +138,9 @@ class MapWindow(QMainWindow):
         params = {
             "apikey": "f3a0fe3a-b07e-4840-a1da-06f18b2ddf13",
             "ll": self.coords,
-            "spn": f"{self.delta},{self.delta}",
+            "z": self.zoom,
+            "l": "map",
+            "size": "600,450",
         }
 
         if self.theme_style == "dark":
@@ -155,7 +159,8 @@ class MapWindow(QMainWindow):
             self.address.setStyleSheet("")
             img = Image.open(BytesIO(response.content))
             img.save("map.png")
-            self.map.setPixmap(QPixmap("map.png"))
+            mappx = QPixmap("map.png")
+            self.map.setPixmap(mappx)
             self.setWindowTitle(self.address.text())
 
     def change_theme(self):
@@ -168,10 +173,14 @@ class MapWindow(QMainWindow):
     def keyPressEvent(self, event):
         key = event.key()
         if key == Qt.Key.Key_PageUp:
-            self.delta += 0.005
+            self.zoom += 1
+            if self.zoom >= 18:
+                self.zoom = 18
             self.update_pixmap()
         elif key == Qt.Key.Key_PageDown:
-            self.delta -= 0.005
+            self.zoom -= 1
+            if self.zoom <= 0:
+                self.zoom = 0
             self.update_pixmap()
         elif key == Qt.Key.Key_Up:
             self.update_coords(0, 0.005)
@@ -181,6 +190,38 @@ class MapWindow(QMainWindow):
             self.update_coords(0.005, 0)
         elif key == Qt.Key.Key_Left:
             self.update_coords(-0.005, 0)
+
+    def on_map_clicked(self, event):
+        # Вычисление координат с помощью проекции Меркатора
+        width = 600
+        height = 450
+        center_lon, center_lat = self.coords.split(",")
+        center_lon = float(center_lon)
+        center_lat = float(center_lat)
+        clicked_x = float(event.pos().x())
+        clicked_y = float(event.pos().y())
+
+        tile_size = 256
+        scale = 2**self.zoom
+
+        delta_x = clicked_x - width / 2
+        degrees_per_pixel_lon = 360.0 / (tile_size * scale)
+        delta_lon = delta_x * degrees_per_pixel_lon
+
+        delta_y = clicked_y - height / 2
+        center_lat_rad = math.radians(center_lat)
+        meters_per_pixel = 156543.03392 * math.cos(center_lat_rad) / scale
+        degrees_per_pixel_lat = meters_per_pixel / 111320.0
+        delta_lat = -delta_y * degrees_per_pixel_lat
+
+        result_lon = center_lon + delta_lon
+        result_lat = center_lat + delta_lat
+        coords = f"{result_lon:.6f},{result_lat:.6f}"
+
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.mark = coords
+            self.get_mark_coords()
+            self.update_pixmap()
 
 
 def except_hook(cls, exception, traceback):
