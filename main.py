@@ -80,6 +80,7 @@ class MapWindow(QMainWindow):
         self.mark_coords = []
         self.address_mark.setText("")
         self.full_address.setText("")
+        self.set_mark = False
         self.update_pixmap()
 
     def get_mark_coords(self):
@@ -222,6 +223,32 @@ class MapWindow(QMainWindow):
             self.mark = coords
             self.get_mark_coords()
             self.update_pixmap()
+
+        elif event.button() == Qt.MouseButton.RightButton:
+            self.delete_marks()
+            search_api_server = "https://search-maps.yandex.ru/v1/"
+            api_key = "dda3ddba-c9ea-4ead-9010-f43fbc15c6e3"
+            search_params = {
+                "apikey": api_key,
+                "lang": "ru_RU",
+                "text": "организация",
+                "ll": coords,
+                "spn": "0.00045,0.00045",
+                "type": "biz",
+                "results": 1,
+            }
+
+            response = requests.get(search_api_server, params=search_params)
+            if response.status_code == 200:
+                data = response.json()
+                if not data:
+                    return
+                coords = data["features"][0]["geometry"]["coordinates"]
+                coords = [str(c) for c in coords]
+                coords = ",".join(coords)
+                self.mark = coords
+                self.get_mark_coords()
+                self.update_pixmap()
 
 
 def except_hook(cls, exception, traceback):
